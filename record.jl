@@ -34,3 +34,38 @@ end
 isequal(r1::Record, r2::Record) = (r1.ID==r2.ID && length(r1.FieldValues)==length(r2.FieldValues) && all(r1.FieldValues.==r2.FieldValues))
 ==(r1::Record, r2::Record)=isequal(r1,r2)
 !=(r1::Record, r2::Record)=!isequal(r1,r2)
+
+function AddError!(Fields,r,p,q,m)
+    L=length(L)
+
+    for k=1:L
+        R=rand()
+        if R<p[k]
+            epsilon=rand(1,2)
+            if epsilon==1
+                r.FieldValues[k] = r.fieldvalues[k]-1
+                if r.FieldValues[k] < minimum(FieldValues[k].dist)
+                    r.FieldValues[k] = r.fieldvalues[k]+2
+            else
+                r.FieldValues[k] = r.fieldvalues[k]+1
+                if r.FieldValues[k] > maximum(Fields[k].dist)
+                    r.FieldValues[k] = r.fieldvalues[k]-2
+            end
+        end
+    end
+
+    for k=1:L
+        R=rand()
+        if R<q[k]
+            r.FieldValues[k] = rand(Fields[k].dist)
+        end
+    end
+
+    for k=1:L
+        R=rand()
+        if R<m[k]
+            r.FieldValues[k] = 0
+        end
+    end
+
+end
