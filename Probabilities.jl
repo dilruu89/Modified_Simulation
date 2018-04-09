@@ -55,5 +55,34 @@ for f in(:isless,:isequal)
 
 end
 
+for f in(:isless,:isequal,:isclose)
+    @eval begin
+        ($f)(a::Probability,b::Float64) = ($f)(a + convert(Probability,b))
+        ($f)(a::Float64,b::Probability) = ($f)(convert(Probability,a) + b)
+    end
+
+end
+
+for f in(:*,)
+    @eval begin
+        function($f)(a::Probability, b::Probability)
+            return ($f)(a.val, b.val)
+        end
+        function($f)(a::Probability,b::Float64)
+            return ($f)(a.val, b)
+        end
+        function($f)(a::Float64,b::Probability)
+            return ($f)(a, b.val)
+        end
+    end
+end
+
+ProbArray(A::Array) = map(Probability,A)
+isclose(A::Array{Probability,1}, B::Array{Probability,1}) = length(A)==length(B) && all([isclose(A[i], B[i]) for i=1:length(A)])
+convert(::Type{Float64}, a::Probability) = a.val
+convert(::Type{Array{Float64}}, A::Array{Probability}) = (A[i].val for i=1:length(A))
+Probability(A::Type{Array{Float64}}) = reshape([Probability(A[i]) for i=1:length(A)], size(A))
+complement(P::Type{Array{Probability}}) = reshape([Probability(P[i]) for i=1:length(P)], size(P))
+
 
 end
