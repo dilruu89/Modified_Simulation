@@ -67,5 +67,130 @@ function AddError!(Fields,r,p,q,m)
             r.FieldValues[k] = 0
         end
     end
+end
+end
 
 end
+
+
+
+type DataBase
+    ID::Integer
+    n::Integer  #no of record
+    t::Integer  #type of db
+    lambda::Float64
+    p::Array{Probability,1}
+    q::Array{Probability,1}
+    m::Array{Probability,1}
+    Records::Array{Record,1}
+
+    function DataBase(ID::Integer,n::Integer,t::Integer,Fields::Array{FieldDefinition,1})
+        if n<1
+            error("no of records should be greater than 1")
+        end
+        t=1
+        lambda=0
+        L=length(Fields)
+        p=Array{Probability}(L)
+        q=Array{Probability}(L)
+        m=Array{Probability}(L)
+        r=Array{Record}(L)
+
+        for i=1:L
+            r[i] = Record(i,Fields)
+        end
+        new(ID,n,t,lambda,p,q,m,r)
+    end
+
+    function DataBase(ID::Integer,n::Integer,t::Integer, lambda::Float64, p::Array{Probability,1}, q::Array{Probability,1}, m::Array{Probability,1},Census::DataBase,Fields::Array{FieldDefinition,1})
+        if n<1
+            error("error must be generated atleast in one record")
+        end
+
+        if t==1
+            if n>Census.n
+                error("do not create errors in Census")
+            end
+            j=shuffle(collect(1:Census.n))
+            for i=1:n
+                r[i]=deepcopy(Census.Records[j[i]])
+                AddError!(Fields,r[i],p,q,m)
+            end
+
+        elseif t==2
+            for i=1:n
+                j=rand(1:Census.n)
+                r[i]=deepcopy(Census.Records[j])
+                AddError!(Fields,r[i],p,q,m)
+            end
+
+        elseif t==3
+            for i=0
+                p=Poisson(lambda)
+                while i<n
+                    j=rand(1:Census.n)
+                    K=rand(p)
+                    k=0
+                    while i<n && k<K
+                        i=i+1
+                        k=k+1
+                        r[i]=deepcopy(Census.Records[j])
+                        AddError!(Fields,r[i],p,q,m)
+                    end
+                end
+            end
+
+        end
+        new(ID,n,t,lambda,p,q,m,r)
+    end
+
+    function DataBase(ID::Integer,n::Integer,t::Integer, lambda::Float64, p::Array{Float64,1}, q::Array{Float64,1}, m::Array{Float64,1},Census::DataBase,Fields::Array{FieldDefinition,1})
+        DataBase(ID,n,t,Lamda,convert(Array{Probability,1},p),convert(Array{Probability,1},q),convert(Array{Probability,1},m),DataBase,Fields::Array{FieldDefinition,1})
+    end
+end
+
+function isequal(R1::DataBase, R2::DataBase)
+    tmp=(R1.ID==R2.ID &&
+    R1.n==R2.n &&
+    R1.t==R2.t &&
+    abs(R1.lambda -  R2.lambda) < 1.0e-12 &&
+    isclose(R1.p, R2.p) &&
+    isclose(R1.q, R2.q) &&
+    isclose(R1.m, R2.m) &&
+    all(R1.Records .== R2.Records)
+
+    )
+    return tmp
+end
+==(R1::DataBase, R2::DataBase) = isequal(R1,R2)
+!=(R1::DataBase, R2::DataBase) = !isequal(R1,R2)
+length(R1::DataBase)=R1.n
+
+type DataBaseArray
+    name::AbstractString
+    DBs::Array{DataBase,1}
+    Fields::Array{FieldDefinition,1}
+
+    function DataBaseArray(name::AbstractString, K, N, T, Lamda, P,Q, M, Fields::Array{FieldDefinition,1})
+        DBs=Array{DataBase}(K)
+        DBs[1]=DataBase(1,N[1],Fields)
+
+        for i=2:k
+            DBs[i] = DataBase(i, N[i], T[i], Lamda[i], P[i,:], Q[i,:], M[i,:], DBs[1], Fields)
+        end
+        new(name,DBs,Fields)
+    end
+    DataBaseArray(name::AbstractString,DBs::Array{DataBase,1},Fields::Array{FieldDefinition,1}) = new(name,DBs,Fields)
+end
+
+function isequal(DB1::DataBaseArray,DB2::DataBaseArray)
+    tmp=( DB1.name==DB2.name &&
+    all(DB1.DBs .== DB2.DBs) &&
+    all(DB1.Fields .== DB2.Fields)
+    )
+    return tmp
+end
+==(DB1::DataBaseArray,DB2::DataBaseArray)=isequal(DB1,DB2)
+!=(DB1::DataBaseArray,DB2::DataBaseArray)=!isequal(DB1,DB2)
+length(D::DataBaseArray)=length(D.DBs)
+size(D::DataBaseArray)=[length(D.DBs[i]) for i in 1:length(D)]
