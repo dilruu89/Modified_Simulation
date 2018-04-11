@@ -62,3 +62,19 @@ show(p2)
 
 complement(p2)
 complement(y)
+
+
+
+
+p=[0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1]
+p2 = convert(Array{Probability,1},p)
+L=length(p)
+
+for k=1:L
+    R=rand()
+    println("R: $R")
+    show(p2[k])
+    if R<p2[k]
+        println("yesss.....")
+    end
+end

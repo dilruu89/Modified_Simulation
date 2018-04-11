@@ -57,22 +57,22 @@ end
 
 for f in(:isless,:isequal,:isclose)
     @eval begin
-        ($f)(a::Probability,b::Float64) = ($f)(a + convert(Probability,b))
-        ($f)(a::Float64,b::Probability) = ($f)(convert(Probability,a) + b)
+        ($f)(a::Probability,b::Real) = ($f)(a , convert(Probability,b))
+        ($f)(a::Real,b::Probability) = ($f)(convert(Probability,a) , b)
     end
 
 end
 
-for f in(:*,)
+for f in (:*,)
     @eval begin
-        function($f)(a::Probability, b::Probability)
+        function ($f)(a::Probability, b::Probability)
             return ($f)(a.val, b.val)
         end
-        function($f)(a::Probability,b::Float64)
-            return ($f)(a.val, b)
+        function ($f)(a::Probability, b::Float64)
+            return ($f)(a.val,b)
         end
-        function($f)(a::Float64,b::Probability)
-            return ($f)(a, b.val)
+        function ($f)(a::Float64, b::Probability)
+            return ($f)(a,b.val)
         end
     end
 end
